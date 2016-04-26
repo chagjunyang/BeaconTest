@@ -7,9 +7,12 @@
 //
 
 #import <UIKit/UIKit.h>
+@import CoreLocation;
 
-@interface ViewController : UIViewController
+@interface ViewController : UIViewController <CLLocationManagerDelegate>
 
+@property (strong, nonatomic) CLBeaconRegion *myBeaconRegion;
+@property (strong, nonatomic) CLLocationManager *locationManager;
 
 @end
 
