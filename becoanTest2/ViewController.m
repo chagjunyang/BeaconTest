@@ -10,7 +10,10 @@
 
 @interface ViewController () 
 
-@property (strong, nonatomic) UITextView *label;
+@property (strong, nonatomic) IBOutlet UIButton *startButton;
+@property (strong, nonatomic) IBOutlet UIButton *stopButton;
+@property (strong, nonatomic) IBOutlet UIButton *checkAuthorizationButton;
+@property (strong, nonatomic) IBOutlet UILabel *logLabel;
 
 @end
 
@@ -19,115 +22,232 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    
+
+    [self setupLocationManager];
+    [self setupRegion];
+}
+
+
+#pragma mark - Setup
+
+
+- (void)setupLocationManager
+{
     self.locationManager = [[CLLocationManager alloc] init];
     self.locationManager.delegate = self;
-    
-    NSLog(@"%d", [self deviceSettingsAreCorrect]);
-    
-    NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:@"b9407f30-f5f8-466e-aff9-25556b57fe6d"];
+}
+
+
+- (void)setupRegion
+{
+    NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:@"E2C56DB5-DFFB-48D2-B060-D0F5A71096E0"];
     
     _myBeaconRegion = [[CLBeaconRegion alloc] initWithProximityUUID:uuid identifier:[uuid UUIDString]];
-    _myBeaconRegion.notifyEntryStateOnDisplay= NO;
-
-    [self.locationManager startMonitoringForRegion:_myBeaconRegion];
-    [self.locationManager startRangingBeaconsInRegion:_myBeaconRegion];
-    
-    _label = [[UITextView alloc] init];
-    
-    [self.view addSubview:_label];
+    _myBeaconRegion.notifyEntryStateOnDisplay = YES;
+    _myBeaconRegion.notifyOnExit = YES;
+    _myBeaconRegion.notifyOnEntry = YES;
 }
 
--(BOOL)deviceSettingsAreCorrect
-{
-    NSString *errorMessage;
-    
-    if (![CLLocationManager locationServicesEnabled]
-        || [CLLocationManager authorizationStatus] == kCLAuthorizationStatusDenied)
-    {
-        errorMessage = [errorMessage stringByAppendingString: @"Location services are turned off! Please turn them on!\n"];
-        [self.locationManager requestAlwaysAuthorization];
-    }
-    if (![CLLocationManager isRangingAvailable])
-    {
-        errorMessage = [errorMessage stringByAppendingString: @"Ranging not available!\n"];
-    }
-    if (![CLLocationManager isMonitoringAvailableForClass:[CLBeaconRegion class]])
-    {
-        errorMessage = [errorMessage stringByAppendingString: @"Beacons ranging not supported!\n"];
-    }
-    if ([errorMessage length])
-    {
-        NSLog(@"%@",errorMessage);
-    }
-    
-    return [errorMessage length] == 0;
-}
 
--(void)setTextLabel:(NSString *)text
-{
-    [_label setText:text];
-    [_label sizeToFit];
-    
-    CGRect frame = _label.frame;
-    frame.origin.y = 50.0f;
-    [_label setFrame:frame];
-}
+#pragma mark - CLLocationManagerDelegate
+
 
 -(void)locationManager:(CLLocationManager*)manager didRangeBeacons:(NSArray*)beacons inRegion:(CLBeaconRegion*)region
 {
- //   NSLog(@"region : %@", region);
     for(CLBeacon *beacon in beacons)
     {
-//        NSLog(@"UUID : %@",beacon.proximityUUID);
-//        NSLog(@"major : %@",beacon.major);
-//        NSLog(@"minor : %@",beacon.minor);
-//        NSLog(@"proximity : %ld",beacon.proximity);
-//        NSLog(@"rssi : %ld",beacon.rssi);
-//        NSLog(@"a  : %lf", beacon.accuracy);
-        if ([self.myBeaconRegion.proximityUUID isEqual:beacon.proximityUUID]) {
-            [self setTextLabel:[NSString stringWithFormat:@"UID:%@ major:%@ accuracy:%lf", beacon.proximityUUID, beacon.major, beacon.accuracy]];
-        } else {
-            [self setTextLabel:[NSString stringWithFormat:@"this is not beacon"]];
+        if ([self.myBeaconRegion.proximityUUID isEqual:beacon.proximityUUID])
+        {
+            NSString *sProximityString = @"";
+            
+            if(beacon.proximity == CLProximityUnknown)
+            {
+                sProximityString = @"Unkown";
+            }
+            else if(beacon.proximity == CLProximityNear)
+            {
+                sProximityString = @"Near";
+            }
+            else if(beacon.proximity == CLProximityImmediate)
+            {
+                sProximityString = @"Immediate";
+            }
+            else
+            {
+                sProximityString = @"Far";
+            }
         }
     }
 }
 
-- (void)locationManager:(CLLocationManager *)manager didStartMonitoringForRegion:(CLRegion *)region {
-    NSLog(@"didStartMonitoringForRegion");
-    [self.locationManager requestStateForRegion:self.myBeaconRegion];
+- (void)locationManager:(CLLocationManager *)manager rangingBeaconsDidFailForRegion:(nonnull CLBeaconRegion *)region withError:(nonnull NSError *)error
+{
+    [self.logLabel setText:[NSString stringWithFormat:@"rangingBeaconsDidFailForRegion %@", error]];
 }
 
+- (void)locationManager:(CLLocationManager *)manager didStartMonitoringForRegion:(CLRegion *)region {
+    [self.logLabel setText:@"didStartMonitoringForRegion"];
+    
+    [self.locationManager requestStateForRegion:_myBeaconRegion];
+}
 
 // 모니터링 실패 시
 - (void)locationManager:(CLLocationManager *)manager monitoringDidFailForRegion:(CLRegion *)region withError:(NSError *)error {
-    NSLog(@"monitoringDidFailForRegion : %@",error);
+        [self.logLabel setText:[NSString stringWithFormat:@"monitoringDidFailForRegion %@", error]];
 }
 
 //비콘에 진입하였을 때
 - (void)locationManager:(CLLocationManager*)manager didEnterRegion:(CLRegion *)region
 {
-    NSLog(@"didEnterRegion");
-    [self.locationManager startRangingBeaconsInRegion:self.myBeaconRegion];
+    [self.logLabel setText:@"didEnterRegion"];
 }
 
 //비콘에 멀어져 연결이 종료될 때
 -(void)locationManager:(CLLocationManager *)manager didExitRegion:(CLRegion *)region
 {
-    NSLog(@"didExitRegion");
-    [self.locationManager stopRangingBeaconsInRegion:self.myBeaconRegion];;
+    [self.logLabel setText:@"didExitRegion"];
 }
 
 //비콘 상태
 -(void)locationManager:(CLLocationManager *)manager didDetermineState:(CLRegionState)state forRegion:(CLRegion *)region
 {
     if (state == CLRegionStateInside) {
-        NSLog(@"CLRegionStateInside");
+        [self.logLabel setText:@"Beacon Monitoring Success : State Inside"];
+        [self.locationManager startRangingBeaconsInRegion:_myBeaconRegion];
     }else if(state == CLRegionStateOutside){
-        NSLog(@"CLRegionStateOutside");
+        [self.logLabel setText:@"Beacon Monitoring Success : State Outside"];
+        [self.locationManager stopRangingBeaconsInRegion:self.myBeaconRegion];
     }else{
-        NSLog(@"CLRegionStateUnknown");
+        [self.logLabel setText:@"Beacon Monitoring Success : State Unkown"];
     }
 }
+
+//권한설정 변경
+- (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status API_AVAILABLE(ios(4.2), macos(10.7))
+{
+    NSString *sStatusString = nil;
+    
+    if(status == kCLAuthorizationStatusNotDetermined)
+    {
+        sStatusString = @"NotDetermaind";
+    }
+    else if(status == kCLAuthorizationStatusDenied)
+    {
+        sStatusString = @"Denied";
+    }
+    else if(status == kCLAuthorizationStatusAuthorizedWhenInUse)
+    {
+        sStatusString = @"WhenInUse";
+    }
+    else if(status == kCLAuthorizationStatusAuthorizedAlways)
+    {
+        sStatusString = @"Always";
+    
+        [self startMonitoring];
+    }
+    
+    NSString *sMessage = [NSString stringWithFormat:@"AuthorizationStatus %@", sStatusString];
+    
+    [self.logLabel setText:sMessage];
+}
+
+
+#pragma mark - Action
+
+
+- (IBAction)tappedStartButton:(id)sender {
+    [self startMonitoring];
+}
+
+
+- (IBAction)tappedStopButton:(id)sender {
+    [self stopMonitoring];
+}
+
+- (IBAction)tappedCheckButton:(id)sender
+{
+    NSString *errorMessage;
+    
+    if (![CLLocationManager isMonitoringAvailableForClass:[CLBeaconRegion class]])
+    {
+        errorMessage = [errorMessage stringByAppendingString: @"Beacons not supported!\n"];
+    }
+    else if (![CLLocationManager isRangingAvailable])
+    {
+        errorMessage = [errorMessage stringByAppendingString: @"Ranging not available!\n"];
+    }
+    else if([CLLocationManager locationServicesEnabled] == NO)
+    {
+        errorMessage = [errorMessage stringByAppendingString: @"locationServices not enabled"];
+        
+        [self showAlert];
+    }
+    else
+    {
+        CLAuthorizationStatus status = [CLLocationManager authorizationStatus];
+        
+        if (status == kCLAuthorizationStatusDenied)
+        {
+            errorMessage = @"permission denied";
+            
+            [self showAlert];
+        }
+        else if(status == kCLAuthorizationStatusAuthorizedWhenInUse)
+        {
+            errorMessage = @"beacon monitoring need to always permission";
+            
+            [self showAlert];
+        }
+        else if(status == kCLAuthorizationStatusNotDetermined)
+        {
+            errorMessage = @"permission denied";
+            
+            [self.locationManager requestAlwaysAuthorization];
+        }
+        else if(status == kCLAuthorizationStatusAuthorizedAlways)
+        {
+            errorMessage = @"Have Always Permission";
+        }
+    }
+    
+    [self.logLabel setText:errorMessage];
+}
+
+
+#pragma mark - Helper
+
+
+- (void)showAlert
+{
+    NSString *sTitle = @"비콘 모니터링을위해 위치서비스 `항상`접근권한이 필요합니다.";
+    NSString *sConfrimTitle = @"확인";
+    
+    UIAlertController *sAlertController         = [UIAlertController alertControllerWithTitle:@"" message:sTitle preferredStyle:UIAlertControllerStyleAlert];
+    
+    UIAlertAction *sConfirmAction = [UIAlertAction actionWithTitle:sConfrimTitle
+                                                             style:UIAlertActionStyleDefault
+                                                           handler:^(UIAlertAction * _Nonnull aAction) {
+                                                               [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
+                                                           }];
+    [sAlertController addAction:sConfirmAction];
+    
+    [self presentViewController:sAlertController animated:YES completion:nil];
+}
+
+
+- (void)startMonitoring
+{
+    [self.locationManager startMonitoringForRegion:_myBeaconRegion];
+}
+
+
+- (void)stopMonitoring
+{
+    [self.logLabel setText:@"Stop Monitoring"];
+    
+    [self.locationManager stopRangingBeaconsInRegion:_myBeaconRegion];
+    [self.locationManager stopMonitoringForRegion:_myBeaconRegion];
+}
+
 
 @end
