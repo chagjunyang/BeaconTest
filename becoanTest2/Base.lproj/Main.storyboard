@@ -30,7 +30,7 @@
                             </button>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="95V-Ya-qxE">
                                 <rect key="frame" x="41" y="180" width="293" height="30"/>
-                                <state key="normal" title="Check Authorization"/>
+                                <state key="normal" title="권한 획득"/>
                                 <connections>
                                     <action selector="tappedCheckButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Twd-bB-4V7"/>
                                 </connections>
@@ -42,8 +42,8 @@
                                     <action selector="tappedStopButton:" destination="BYZ-38-t0r" eventType="touchUpInside" id="DjA-Fv-eUz"/>
                                 </connections>
                             </button>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Log" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="7Zh-lp-WAR">
-                                <rect key="frame" x="41" y="259" width="29" height="21"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Message" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="7Zh-lp-WAR">
+                                <rect key="frame" x="41" y="259" width="69" height="21"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="17"/>
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>

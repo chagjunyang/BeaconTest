@@ -125,30 +125,7 @@
 //권한설정 변경
 - (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status API_AVAILABLE(ios(4.2), macos(10.7))
 {
-    NSString *sStatusString = nil;
-    
-    if(status == kCLAuthorizationStatusNotDetermined)
-    {
-        sStatusString = @"NotDetermaind";
-    }
-    else if(status == kCLAuthorizationStatusDenied)
-    {
-        sStatusString = @"Denied";
-    }
-    else if(status == kCLAuthorizationStatusAuthorizedWhenInUse)
-    {
-        sStatusString = @"WhenInUse";
-    }
-    else if(status == kCLAuthorizationStatusAuthorizedAlways)
-    {
-        sStatusString = @"Always";
-    
-        [self startMonitoring];
-    }
-    
-    NSString *sMessage = [NSString stringWithFormat:@"AuthorizationStatus %@", sStatusString];
-    
-    [self.logLabel setText:sMessage];
+    [self.logLabel setText:[self stateMessage:status]];
 }
 
 
@@ -178,35 +155,22 @@
     }
     else if([CLLocationManager locationServicesEnabled] == NO)
     {
-        errorMessage = [errorMessage stringByAppendingString: @"locationServices not enabled"];
+        errorMessage = [errorMessage stringByAppendingString: @"위치서비스가 꺼져있습니다."];
         
-        [self showAlert];
+        [self showAlertWithMessage:@"위치서비스가 꺼져있습니다."];
     }
     else
     {
         CLAuthorizationStatus status = [CLLocationManager authorizationStatus];
+        errorMessage = [self stateMessage:status];
         
-        if (status == kCLAuthorizationStatusDenied)
+        if (status == kCLAuthorizationStatusDenied || status == kCLAuthorizationStatusAuthorizedWhenInUse)
         {
-            errorMessage = @"permission denied";
-            
-            [self showAlert];
-        }
-        else if(status == kCLAuthorizationStatusAuthorizedWhenInUse)
-        {
-            errorMessage = @"beacon monitoring need to always permission";
-            
-            [self showAlert];
+            [self showAlertWithMessage:errorMessage];
         }
         else if(status == kCLAuthorizationStatusNotDetermined)
         {
-            errorMessage = @"permission denied";
-            
             [self.locationManager requestAlwaysAuthorization];
-        }
-        else if(status == kCLAuthorizationStatusAuthorizedAlways)
-        {
-            errorMessage = @"Have Always Permission";
         }
     }
     
@@ -217,18 +181,24 @@
 #pragma mark - Helper
 
 
-- (void)showAlert
+- (void)showAlertWithMessage:(NSString *)aMessage
 {
-    NSString *sTitle = @"비콘 모니터링을위해 위치서비스 `항상`접근권한이 필요합니다.";
-    NSString *sConfrimTitle = @"확인";
+    NSString *sConfrimTitle = @"설정";
     
-    UIAlertController *sAlertController         = [UIAlertController alertControllerWithTitle:@"" message:sTitle preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *sAlertController = [UIAlertController alertControllerWithTitle:@"" message:aMessage preferredStyle:UIAlertControllerStyleAlert];
     
     UIAlertAction *sConfirmAction = [UIAlertAction actionWithTitle:sConfrimTitle
                                                              style:UIAlertActionStyleDefault
                                                            handler:^(UIAlertAction * _Nonnull aAction) {
                                                                [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
                                                            }];
+    
+    UIAlertAction *sCancelAction = [UIAlertAction actionWithTitle:@"닫기"
+                                                             style:UIAlertActionStyleDefault
+                                                           handler:^(UIAlertAction * _Nonnull aAction) {
+                                                           }];
+    
+    [sAlertController addAction:sCancelAction];
     [sAlertController addAction:sConfirmAction];
     
     [self presentViewController:sAlertController animated:YES completion:nil];
@@ -247,6 +217,31 @@
     
     [self.locationManager stopRangingBeaconsInRegion:_myBeaconRegion];
     [self.locationManager stopMonitoringForRegion:_myBeaconRegion];
+}
+
+
+- (NSString *)stateMessage:(CLAuthorizationStatus)status
+{
+    NSString *sStatusString = nil;
+    
+    if(status == kCLAuthorizationStatusNotDetermined)
+    {
+        sStatusString = @"위치서비스 권한 설정 안됨";
+    }
+    else if (status == kCLAuthorizationStatusDenied)
+    {
+        sStatusString = @"위치서비스 접근허용=`안함`";
+    }
+    else if(status == kCLAuthorizationStatusAuthorizedWhenInUse)
+    {
+        sStatusString = @"위치서비스 접근허용=`앱을 사용하는 동안`";
+    }
+    else if(status == kCLAuthorizationStatusAuthorizedAlways)
+    {
+        sStatusString = @"위치서비스 접근허용=`항상`";
+    }
+    
+    return sStatusString;
 }
 
 
